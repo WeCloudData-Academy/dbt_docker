@@ -1,0 +1,56 @@
+---
+version: '3'
+
+services:
+  dbt:
+    image: weclouddata/dbt${DBT_VERSION_TAG}
+    container_name: dbt
+    build: ./docker/dbt/
+#    env_file:
+#      - ./docker/dbt/.env
+    command: 
+      - bash 
+      - -c 
+      - |
+        echo "Launching dbt"
+        #
+        sleep infinity
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /Users/dbt_projects # this binds the project folder to your local
+        target: /Users/dbt_projects # change both source and target accordingly
+    ports:
+      - "8085:8085"
+    environment:
+      - TZ=Etc/GMT
+
+
+  postgres:
+    image: postgres${POSTGRES_VERSION_TAG}
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/postgres/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./docker/postgres/data.sql:/docker-entrypoint-initdb.d/2-data.sql
+      - ./docker/postgres/date.sql:/docker-entrypoint-initdb.d/3-date.sql
+
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
